@@ -29,25 +29,65 @@
             user-select: none;
             /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
         }
-        .clear-button{
+        .page-buttons-container{
             position: absolute;
             top: 10px;
             right: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-direction: column;
         }
         .clear-button > img{
             width: 40px;
             cursor: pointer;
             border: 3px solid #454545;
-            border-radius: 9px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .pen-button{
+            width: 40px;
+            height: 40px;
+            background-color: #cacaca;
+            transition: background-color 0.2s ease;
+            border: 3px solid #757575;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .pen-button:hover{
+            background-color: #757575;
+        }
+        .pen-button > img{
+            width: 30px;
+            height: 30px;
         }
     </style>
 
 </head>
 
 <body>
-    <div class="clear-button" onclick="clearCanvas()">
-        <img src="./trash.png">
+    <div class="page-buttons-container">
+        <div class="clear-button" onclick="clearCanvas()">
+            <img src="https://i.ibb.co/vQHzcHJ/trash.png">
+        </div>
+        <div class="pen-button" onclick="changePen('#fff', '20')">
+            <img src="https://i.ibb.co/3pv93Dh/eraser.png">
+        </div>
+        <div class="pen-button" onclick="changePen('#000', '2')">
+            <img src="https://i.ibb.co/PrKH7mS/pen-black.png">
+        </div>
+        <div class="pen-button" onclick="changePen('#bf1c1c', '2')">
+            <img src="https://i.ibb.co/yRXmjZj/pen-red.png">
+        </div>
+        <div class="pen-button" onclick="changePen('#0d15bb', '2')">
+            <img src="https://i.ibb.co/1MJ5PRV/pen-blue.png">
+        </div>
     </div>
+
     <canvas id="canvas">Your browser does not support HTML5 canvas</canvas>
     <script>
         // get our canvas element
@@ -68,6 +108,9 @@
         let prevCursorX;
         let prevCursorY;
 
+        // Pen specs
+        let color = '#000'
+        let stroke = 2
         // distance from origin
         let offsetX = 0;
         let offsetY = 0;
@@ -94,7 +137,10 @@
         function trueWidth() {
             return canvas.clientWidth / scale;
         }
-
+        function changePen(newColor, newStroke){
+            color = newColor
+            stroke = newStroke
+        }
         function redrawCanvas() {
             // set the canvas to the size of the window
             canvas.width = document.body.clientWidth;
@@ -104,11 +150,22 @@
             context.fillRect(0, 0, canvas.width, canvas.height);
             for (let i = 0; i < drawings.length; i++) {
                 const line = drawings[i];
-                drawLine(toScreenX(line.x0), toScreenY(line.y0), toScreenX(line.x1), toScreenY(line.y1));
+                drawLine(toScreenX(line.x0), toScreenY(line.y0), toScreenX(line.x1), toScreenY(line.y1), line.color, line.stroke);
             }
         }
         redrawCanvas();
 
+        // set ctrl + z action
+        document.onkeydown = (e)=>{
+            if(e.keyCode == 17){
+                document.onkeydown = (event)=>{
+                    if(event.keyCode == 90){
+                        drawings.pop()
+                        redrawCanvas()
+                    }
+                }
+            }
+        }
         // if the window changes size, redraw the canvas
         window.addEventListener("resize", (event) => {
             redrawCanvas();
@@ -166,10 +223,12 @@
                     x0: prevScaledX,
                     y0: prevScaledY,
                     x1: scaledX,
-                    y1: scaledY
+                    y1: scaledY,
+                    color: color,
+                    stroke: stroke,
                 })
                 // draw a line
-                drawLine(prevCursorX, prevCursorY, cursorX, cursorY);
+                drawLine(prevCursorX, prevCursorY, cursorX, cursorY, color, stroke);
             }
             if (rightMouseDown) {
                 // move the screen
@@ -205,12 +264,12 @@
 
             redrawCanvas();
         }
-        function drawLine(x0, y0, x1, y1) {
+        function drawLine(x0, y0, x1, y1, newColor, newStroke) {
             context.beginPath();
             context.moveTo(x0, y0);
             context.lineTo(x1, y1);
-            context.strokeStyle = '#000';
-            context.lineWidth = 2;
+            context.strokeStyle = newColor;
+            context.lineWidth = newStroke;
             context.stroke();
         }
 
@@ -251,9 +310,11 @@
                     x0: prevScaledX,
                     y0: prevScaledY,
                     x1: scaledX,
-                    y1: scaledY
+                    y1: scaledY,
+                    color: color,
+                    stroke: stroke,
                 })
-                drawLine(prevTouch0X, prevTouch0Y, touch0X, touch0Y);
+                drawLine(prevTouch0X, prevTouch0Y, touch0X, touch0Y, color, stroke);
             }
 
             if (doubleTouch) {
